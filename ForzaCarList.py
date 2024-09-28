@@ -9,8 +9,15 @@ from collections import defaultdict
 #    > should be 'https://forza.fandom.com/wiki/Category:Manufacturers'
 # @output: an array full of manufacturers in the game
 def getListOfManufacturers(link):
+
+    arr = []
+
+    print("Aquiring list of manufacturers in Forza...")
+
     # Sends a GET request to the provided URL and stores the response in the 'page' variable
     page = requests.get(link)
+
+    print("...")
 
     # Parses the retrieved HTML content from the page using BeautifulSoup
     # The 'html.parser' argument specifies that we're dealing with an HTML document
@@ -19,8 +26,6 @@ def getListOfManufacturers(link):
     # Searches for a specific <div> element with the class 'category-page__members'
     # This <div> is assumed to contain a list of manufacturers
     list_items = soup.find('div', class_='category-page__members') 
-
-    arr = []
 
     # Check if the 'list_items' was found (i.e., the <div> exists on the page)
     if list_items:
@@ -45,7 +50,9 @@ def getListOfManufacturers(link):
             # Dumps that value and any other unnecessary value.
             if element != 'Category:Manufacturers By Origin':
                     arr.append(element)
-            
+    
+    print("List of manufacturers aquired.")
+  
     return arr
 
 
@@ -59,6 +66,8 @@ def getListOfCars(link):
     for url in links:
         # Sends a GET request to the URL to retrieve the web page content
         page = requests.get(url)
+
+        print(f"Scraping \'{url}\'...")
         
         # Parses the retrieved page content using BeautifulSoup and creates a BeautifulSoup object
         # The 'html.parser' argument specifies that we are parsing an HTML document
@@ -87,6 +96,9 @@ def getListOfCars(link):
 
                 if car not in cars:
                     cars.append(car)
+        print("...")
+
+    print("Finished aquiring all cars.")
 
     return cars
 
@@ -102,8 +114,8 @@ if __name__ == '__main__':
     models = getListOfCars(links)
 
     manufacturers.sort()
+    models.sort()
 
-    # Keep doing this until the models array is empty
     while models:
     
         # Pick a manufacturer from the list of manufacturers
