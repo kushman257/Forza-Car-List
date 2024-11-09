@@ -1,7 +1,8 @@
 from bs4 import BeautifulSoup
-import requests
-import pandas as pd
 from collections import defaultdict
+import pandas as pd
+import requests
+import openpyxl as pxl
 
 
 # The purpose of this function is to compile a list of manufacturers in Forza
@@ -57,8 +58,8 @@ def getListOfManufacturers(link):
 
 
 # The purpose of the function is to strip data from the Forza website for all car models
-# @input: links -> an array that holds all the links it should comb over
-# @output: an array that has all the car models stored in it
+# @input: links -> an array that holds all the links it should comb over.
+# @output: an array that has all the car models stored in it.
 def getListOfCars(link):
 
     cars = []
@@ -100,9 +101,123 @@ def getListOfCars(link):
 
     print("Finished aquiring all cars.")
 
+    cars = sorted(cars, key=lambda car: car[-4:], reverse=True)
     return cars
 
 
+# This function simply matches the models with a manufacturer.
+# @input: array of manufacturers, array of models
+# @output: filled out excel sheet
+def insertModels(manufacturers, models):
+
+    # Cycle through the list of manufacturers
+    for manufacturer in manufacturers:
+        
+        print(f"Finding all models made by {manufacturer}.")
+
+        # Initialize an empty temporary array that holds all the models for a certain car manufacturer
+        temp_arr = []
+
+        # Cycle through the models array
+        index = 0
+
+        while index < len(models):
+
+            model = models[index]
+
+            # Sees if the element has the manufacturer.
+            if model.startswith(manufacturer):
+                
+                # If it matches the manufacturer, then append it to temp_arr
+                model = model.removeprefix(manufacturer).strip()
+                temp_arr.append(model)
+
+                # Pop 'model' out of the 'models' array. The reasoning behind this is so the models array 
+                # becomes smaller meaning its less time cosuming.
+                models.pop(index)
+                print('*pop*')
+
+            else:
+                # Increment the index only if no pop was performed
+                index += 1
+
+        # At the end of this cycle, it should get all the models with the manufacturer name.
+        # Now we sort the elements in the array by descending order.
+        temp_arr = sorted(temp_arr, key=lambda car: car[-4:], reverse = True)
+
+        # Pass in the current list of models and the current manufacturer
+        insertIntoExcel(temp_arr, manufacturer)
+    pass
+
+# Inserts models into an excel sheet if the data doesn't exist in the excel sheet yet. Also, if no excel sheet it passed
+#       into the function, then it will create an empty excel sheet with the proper headers.
+# @input: The current array of models to be inserted, the current manufacturer who's car models we are working with,
+#           and the workbook that we are working with.             
+# @output: Should return an excel sheet that has all the data we need. (Workbook object)
+def insertIntoExcel(temp_arr, manufacturer, excel_workbook = None):
+    
+    if excel_workbook is None:
+        # Create a new workbook and select an active sheet
+        wb = pxl.Workbook()
+        ws = wb.active
+
+        # Set coloumn width 
+        ws.column_dimensions['A'].width = 16.22  # Make
+        ws.column_dimensions['B'].width = 56.77  # Model
+        ws.column_dimensions['C'].width = 35.55  # Paint Name
+        ws.column_dimensions['D'].width = 16.22  # Paint Type
+        
+        # Create header for chart
+        # Color the headers black
+        for row in ws["A1:J2"]:
+            for cell in row:
+                cell.fill = pxl.styles.PatternFill(start_color = 'FF000000', end_color = 'FF000000', fill_type = 'solid')
+
+        # Create the title for each coloumn
+        ws['A2'] = 'Make'
+        ws['B2'] = 'Model'
+        ws['C2'] = 'Color Name'
+        ws['D2'] = 'Paint Type'
+        
+        ws.merge_cells('E1:G1')
+        ws['E1'].font = pxl.styles.Font(color = 'FF2F75B5') # Set color 1's color to blue
+        ws['E1'].alignment = pxl.styles.Alignment(horizontal="center")
+        ws['E1'] = 'COLOR 1 (X)'
+        ws['E2'] = 'Hue'
+        ws['F2'] = 'Saturation'
+        ws['G2'] = 'Brightness'
+
+        ws.merge_cells('H1:J1')
+        ws['H1'].font = pxl.styles.Font(color = 'FFFFD966') # Set color 2's color to yellow
+        ws['H1'].alignment = pxl.styles.Alignment(horizontal="center")
+        ws['H1'] = 'COLOR 2 (Y)'
+        ws['H2'] = 'Hue'
+        ws['I2'] = 'Saturation'
+        ws['J2'] = 'Brightness'
+
+        # Set the color for the text in the header cells to white
+        for cell in ws.iter_rows(min_row = 2, max_row = 2, min_col = 1, max_col = 10):
+            for c in cell:
+                c.font = pxl.styles.Font(color = 'FFFFFFFF')
+    
+    # Fill in the array
+    # Find the first empty row
+    first_empty_row = ws.max_row + 1
+
+    # Append the models from the first empty row
+    for row in range(len(temp_arr)):
+        ws[f'A{first_empty_row + row}'] = manufacturer
+        ws[f'B{first_empty_row + row}'] = temp_arr[row]
+
+    # Save the workbook
+    wb.save("Forza Car List.xlsx")
+
+    # Close the workbook
+    wb.close()
+
+    # excel_workbook = wb
+            
+        
 if __name__ == '__main__':
     link_for_manufacturers = 'https://forza.fandom.com/wiki/Category:Manufacturers'
     links = ["https://forza.fandom.com/wiki/Forza_Horizon_3/Cars",
@@ -113,30 +228,6 @@ if __name__ == '__main__':
 
     models = getListOfCars(links)
 
-    manufacturers.sort()
-    models.sort()
+    manufacturers.sort(key = lambda x: x.lower())
 
-    while models:
-    
-        # Pick a manufacturer from the list of manufacturers
-        for manufacturer in manufacturers:
-
-            index = 0
-            
-            temp_arr = []
-
-            while index < len(models):
-                model = models[index]
-
-                if model.startswith(manufacturer):
-                    temp_arr.append(model)
-                    models.pop(index)   
-                    # Do not decrement index, as the next element shifts into the current index
-                else:
-                    index += 1
-                # After picking out all the models, sort it by year (newer to older).
-                    
-        print( 'New Section\n\n')   
-    # Append it to an excel file. 
-    # Before heading to the next manufacturer, clear the temp array. 
-    pass
+    insertModels(manufacturers, models)
