@@ -109,6 +109,8 @@ def getListOfCars(link):
 # @input: array of manufacturers, array of models
 # @output: filled out excel sheet
 def insertModels(manufacturers, models):
+    # Initialize the workbook as None
+    workbook = None
 
     # Cycle through the list of manufacturers
     for manufacturer in manufacturers:
@@ -146,8 +148,12 @@ def insertModels(manufacturers, models):
         temp_arr = sorted(temp_arr, key=lambda car: car[-4:], reverse = True)
 
         # Pass in the current list of models and the current manufacturer
-        insertIntoExcel(temp_arr, manufacturer)
-    pass
+        workbook = insertIntoExcel(temp_arr, manufacturer, workbook)
+    
+    # Save the final workbook after processing all manufacturers
+    if workbook:
+        workbook.save("Forza Car List.xlsx")
+        workbook.close()
 
 # Inserts models into an excel sheet if the data doesn't exist in the excel sheet yet. Also, if no excel sheet it passed
 #       into the function, then it will create an empty excel sheet with the proper headers.
@@ -199,7 +205,12 @@ def insertIntoExcel(temp_arr, manufacturer, excel_workbook = None):
         for cell in ws.iter_rows(min_row = 2, max_row = 2, min_col = 1, max_col = 10):
             for c in cell:
                 c.font = pxl.styles.Font(color = 'FFFFFFFF')
-    
+
+    else:
+        # Use the existing workbook
+        wb = excel_workbook
+        ws = wb.active
+
     # Fill in the array
     # Find the first empty row
     first_empty_row = ws.max_row + 1
@@ -215,7 +226,7 @@ def insertIntoExcel(temp_arr, manufacturer, excel_workbook = None):
     # Close the workbook
     wb.close()
 
-    # excel_workbook = wb
+    return wb
             
         
 if __name__ == '__main__':
